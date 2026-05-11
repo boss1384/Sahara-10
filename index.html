@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sahara Flash Score</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body{font-family:Arial;background:#f3f4f6;margin:0}
+
+header{
+  background:#14532d;
+  color:white;
+  padding:15px;
+  text-align:center;
+  font-weight:bold;
+}
+
+.container{padding:15px}
+
+.tabs{
+  display:flex;
+  background:white;
+  padding:5px;
+  border-radius:12px;
+  margin:10px 0;
+}
+
+.tab-btn{
+  flex:1;
+  padding:10px;
+  border:none;
+  background:none;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.tab-btn.active{
+  background:#166534;
+  color:white;
+  border-radius:10px;
+}
+
+.hidden{display:none}
+
+.card{
+  background:white;
+  padding:15px;
+  margin-bottom:10px;
+  border-radius:12px;
+  cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+
+.team{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.team img{
+  width:25px;
+  height:25px;
+  border-radius:50%;
+}
+
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.6);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.modal-box{
+  background:white;
+  width:95%;
+  max-width:600px;
+  border-radius:12px;
+  max-height:90vh;
+  overflow:auto;
+}
+
+.modal-header{
+  display:flex;
+  justify-content:space-between;
+  padding:10px;
+  border-bottom:1px solid #ddd;
+}
+
+.modal-body{padding:10px}
+
+button{cursor:pointer}
+</style>
+
+</head>
+
+<body>
+
+<header>🌍 Sahara Flash Score</header>
+
+<div class="container">
+
+<!-- TABS -->
+<div class="tabs">
+<button class="tab-btn active" onclick="showTab(0)">Live</button>
+<button class="tab-btn" onclick="showTab(1)">Upcoming</button>
+<button class="tab-btn" onclick="showTab(2)">Leagues</button>
+</div>
+
+<!-- CONTENT -->
+<div id="tab-0"></div>
+<div id="tab-1" class="hidden"></div>
+<div id="tab-2" class="hidden"></div>
+
+</div>
+
+<!-- MODAL -->
+<div id="modal" class="modal hidden">
+<div class="modal-box">
+
+<div class="modal-header">
+<h3 id="title"></h3>
+<button onclick="closeModal()">×</button>
+</div>
+
+<div id="body" class="modal-body"></div>
+
+</div>
+</div>
+
+<script>
+
+/* ================= LOGOS ================= */
+const logo = {
+"Liverpool":"https://logo.clearbit.com/liverpoolfc.com",
+"Chelsea":"https://logo.clearbit.com/chelseafc.com",
+"Arsenal":"https://logo.clearbit.com/arsenal.com",
+"Man City":"https://logo.clearbit.com/mancity.com",
+"Real Madrid":"https://logo.clearbit.com/realmadrid.com",
+"Barcelona":"https://logo.clearbit.com/fcbarcelona.com",
+"Bayern":"https://logo.clearbit.com/fcbayern.com",
+"Dortmund":"https://logo.clearbit.com/bvb.de",
+"PSG":"https://logo.clearbit.com/psg.fr",
+"Juventus":"https://logo.clearbit.com/juventus.com"
+};
+
+const teams = Object.keys(logo);
+
+/* ================= LIVE + UPCOMING ================= */
+let live = Array.from({length:55}, (_,i)=>({
+id:i,
+home:teams[Math.floor(Math.random()*teams.length)],
+away:teams[Math.floor(Math.random()*teams.length)],
+score:`${Math.floor(Math.random()*5)}-${Math.floor(Math.random()*5)}`
+}));
+
+let upcoming = Array.from({length:55}, (_,i)=>({
+id:i,
+home:teams[Math.floor(Math.random()*teams.length)],
+away:teams[Math.floor(Math.random()*teams.length)],
+time:"Tomorrow "+(10+i%12)+":00"
+}));
+
+/* ================= LEAGUES ================= */
+const leagues = {
+"Premier League":[
+"Liverpool vs Chelsea",
+"Arsenal vs Man City",
+"Man United vs Spurs",
+"Brighton vs West Ham",
+"Newcastle vs Villa"
+],
+"Bundesliga":[
+"Bayern vs Dortmund",
+"Leipzig vs Leverkusen",
+"Frankfurt vs Wolfsburg",
+"Stuttgart vs Hoffenheim"
+],
+"Serie A":[
+"Inter vs Juventus",
+"Milan vs Napoli",
+"Roma vs Lazio",
+"Atalanta vs Fiorentina"
+],
+"Ligue 1":[
+"PSG vs Marseille",
+"Lyon vs Monaco",
+"Nice vs Lille",
+"Rennes vs Lens"
+]
+};
+
+/* ================= LIVE ================= */
+function renderLive(){
+document.getElementById("tab-0").innerHTML =
+live.map(m=>`
+<div class="card" onclick="openMatch('LIVE',${m.id})">
+
+<div class="team" onclick="openTeam('${m.home}')">
+<img src="${logo[m.home]}">${m.home}
+</div>
+
+<b>${m.score}</b>
+
+<div class="team" onclick="openTeam('${m.away}')">
+${m.away}<img src="${logo[m.away]}">
+</div>
+
+</div>
+`).join('')
+}
+
+/* ================= UPCOMING ================= */
+function renderUpcoming(){
+document.getElementById("tab-1").innerHTML =
+upcoming.map(m=>`
+<div class="card" onclick="openMatch('UPCOMING',${m.id})">
+${m.home} vs ${m.away} - ${m.time}
+</div>
+`).join('')
+}
+
+/* ================= LEAGUES ================= */
+function renderLeagues(){
+document.getElementById("tab-2").innerHTML =
+Object.keys(leagues).map(l=>`
+<div class="card" onclick="openLeague('${l}')">
+${l}
+</div>
+`).join('')
+}
+
+/* ================= MATCH ================= */
+function openMatch(type,id){
+let data = type==="LIVE"?live[id]:upcoming[id]
+
+document.getElementById("modal").classList.remove("hidden")
+document.getElementById("title").innerText=type+" Match"
+
+document.getElementById("body").innerHTML=`
+<h3>${data.home} vs ${data.away}</h3>
+<p>${data.score || data.time}</p>
+`
+}
+
+/* ================= LEAGUE ================= */
+function openLeague(name){
+document.getElementById("modal").classList.remove("hidden")
+document.getElementById("title").innerText=name
+
+document.getElementById("body").innerHTML=
+leagues[name].map(m=>`
+<div class="card">${m}</div>
+`).join('')
+}
+
+/* ================= TEAM PROFILE ================= */
+function openTeam(team){
+
+let teamLive = live.filter(m=>m.home===team || m.away===team).slice(0,5)
+let teamUpcoming = upcoming.filter(m=>m.home===team || m.away===team).slice(0,5)
+
+document.getElementById("modal").classList.remove("hidden")
+document.getElementById("title").innerText=team
+
+document.getElementById("body").innerHTML=`
+
+<h3>🔴 Live Matches</h3>
+${teamLive.map(m=>`
+<div class="card">${m.home} vs ${m.away} (${m.score})</div>
+`).join('') || "<p>No live matches</p>"}
+
+<h3>⏰ Upcoming Matches</h3>
+${teamUpcoming.map(m=>`
+<div class="card">${m.home} vs ${m.away} (${m.time})</div>
+`).join('') || "<p>No upcoming matches</p>"}
+
+<h3>📊 Stats</h3>
+<div class="card">
+Wins: ${Math.floor(Math.random()*20)}<br>
+Goals: ${Math.floor(Math.random()*50)}<br>
+Matches: ${Math.floor(Math.random()*100)}
+</div>
+
+`
+}
+
+/* ================= MODAL ================= */
+function closeModal(){
+document.getElementById("modal").classList.add("hidden")
+}
+
+/* ================= TABS ================= */
+function showTab(n){
+document.querySelectorAll("div[id^='tab']").forEach(t=>t.classList.add("hidden"))
+document.getElementById("tab-"+n).classList.remove("hidden")
+
+document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"))
+document.querySelectorAll(".tab-btn")[n].classList.add("active")
+}
+
+/* ================= INIT ================= */
+renderLive()
+renderUpcoming()
+renderLeagues()
+showTab(0)
+
+</script>
+
+</body>
+</html>
